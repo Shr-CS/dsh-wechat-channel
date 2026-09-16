@@ -14,6 +14,11 @@
     "lib/**/*.js",
     "cordis.patch.yml"
   ],
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:watch": "node --test --watch \"test/**/*.test.js\"",
+    "prepublishOnly": "npm test"
+  },
   "license": "MIT",
   "author": "Shr.CS",
   "keywords": [
