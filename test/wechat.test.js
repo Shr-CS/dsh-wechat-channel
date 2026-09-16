@@ -351,7 +351,7 @@ describe('状态端点', () => {
 
     assert.equal(res.status, 200);
     const payload = JSON.parse(res.body);
-    assert.equal(payload.plugin, 'dsh-wechat');
+    assert.equal(payload.plugin, 'dsh-wechat-channel');
     assert.equal(payload.configured.token, true);
     assert.equal(res.body.includes(BASE_CONFIG.token), false, '状态页绝不能回显 token');
   });

@@ -1,6 +1,6 @@
 {
   "name": "dsh-wechat-channel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "微信公众号通道插件：在微信里发指令操控 DeepSeek Harness，并把 DSH 的结果推回微信。零运行时依赖。",
   "type": "module",
   "main": "lib/index.js",
