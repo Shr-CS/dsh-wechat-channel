@@ -163,7 +163,9 @@ function textXml(content = '你好') {
 
 describe('插件入口契约', () => {
   test('导出 Cordis 需要的四个字段', () => {
-    assert.equal(name, 'dsh-wechat');
+    // 插件名必须与包名一致：Cordis 按插件名注册，重名会被静默跳过。
+    // npm 上第三方包 dsh-wechat（pan17）用的就是 'dsh-wechat'，撞名会导致本插件完全不加载。
+    assert.equal(name, 'dsh-wechat-channel');
     assert.deepEqual(inject, ['webServer']);
     assert.equal(typeof apply, 'function');
     assert.equal(typeof Config, 'function', 'Config（normalizeConfig）应当是函数');
@@ -355,7 +357,7 @@ describe('整链路（真 HTTP）', () => {
     const res = await fetch(`${base}/wechat/status?key=${TOKEN}`);
     assert.equal(res.status, 200);
     const payload = await res.json();
-    assert.equal(payload.plugin, 'dsh-wechat');
+    assert.equal(payload.plugin, 'dsh-wechat-channel');
     assert.equal(payload.stats.messages >= 1, true);
   });
 
