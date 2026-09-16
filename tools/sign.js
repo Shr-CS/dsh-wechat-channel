@@ -7,12 +7,12 @@
  *   node tools/sign.js <token> [path] [echostr]
  *
  * 示例：
- *   node tools/sign.js dshwechat_9f3a7c1e4b2d6a80 /wechat ECHO_TEST
+ *   node tools/sign.js dshwechat_9f3a7c1e4b2d6a80 /wechat-mp ECHO_TEST
  */
 
 import { signatureOf } from '../lib/protocol.js';
 
-const [, , token, path = '/wechat', echostr] = process.argv;
+const [, , token, path = '/wechat-mp', echostr] = process.argv;
 
 if (!token) {
   console.error('用法: node tools/sign.js <token> [path] [echostr]');

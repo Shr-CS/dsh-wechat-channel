@@ -2,27 +2,27 @@
  * make-release.js — 用 GitHub REST API 建 Release 并上传 npm tarball
  *
  * 为什么用 REST API 而不是 gh CLI / git push tag：
- *   本机 github.com:443 会间歇性连不通（git push 走的入口），
+ *   本机 github.com:443 会间歇性连不通（git push 走的入口，实测每 2~3 次失败一次），
  *   而 api.github.com 与 uploads.github.com 稳定可用。
  *
  * 为什么把 .tgz 当附件：
  *   npm 发布还卡着（token 缺 bypass 2FA 权限），把 npm pack 的产物挂到 Release 上，
- *   别人可以直接 `npm install ./dsh-wechat-channel-0.1.1.tgz` 或
- *   `dsh plugin --profile web add <解压后的目录>` 装上，不必等 npm。
+ *   别人可以直接 `npm install ./dsh-wechat-channel-<版本>.tgz` 装上，不必等 npm。
  *
  * 凭据从 git credential manager 现取，只在内存里用，不落盘不打印。
  *
  * 用法：
+ *   npm pack                       # 先产出 .tgz
  *   node tools/make-release.js --dry-run
  *   node tools/make-release.js
  */
-'use strict';
 
-const { execFile } = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
+import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = 'Shr-CS/dsh-wechat-channel';
 const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
 const TAG = 'v' + VERSION;
@@ -53,7 +53,7 @@ const NOTES = [
   '',
   '```bash',
   `npm install ./dsh-wechat-channel-${VERSION}.tgz`,
-  '# 或者直接让 DSH 从解压后的目录加载',
+  '# 或者让 DSH 直接从解压后的目录加载',
   '# dsh plugin --profile web add link:<解压出的绝对路径>',
   '```',
   '',
@@ -128,10 +128,13 @@ function gitCredential() {
 
 function api(method, url, token, { json, raw, contentType, timeout = 1800000 } = {}) {
   return new Promise((resolve, reject) => {
-    const args = ['-s', '-w', '\n%{http_code}', '-X', method,
+    const args = [
+      '-s', '-w', '\n%{http_code}',
+      '-X', method,
       '-H', 'Authorization: Bearer ' + token,
-      '-H', 'User-Agent', '-H', 'dsh-release',
-      '-H', 'Accept: application/vnd.github+json'];
+      '-H', 'User-Agent: dsh-release',
+      '-H', 'Accept: application/vnd.github+json',
+    ];
     if (json !== undefined) args.push('-H', 'Content-Type: application/json', '-d', JSON.stringify(json));
     if (raw !== undefined) {
       if (contentType) args.push('-H', 'Content-Type: ' + contentType);
@@ -147,42 +150,42 @@ function api(method, url, token, { json, raw, contentType, timeout = 1800000 } =
   });
 }
 
-(async () => {
-  if (!fs.existsSync(TGZ)) {
-    console.error('找不到 ' + TGZ);
-    console.error('请先执行：npm pack');
-    process.exit(1);
-  }
-  const kb = (fs.statSync(TGZ).size / 1024).toFixed(1);
+if (!fs.existsSync(TGZ)) {
+  console.error('找不到 ' + TGZ);
+  console.error('请先执行：npm pack');
+  process.exit(1);
+}
+const kb = (fs.statSync(TGZ).size / 1024).toFixed(1);
 
-  const cred = await gitCredential();
-  if (!cred?.password) { console.error('拿不到 GitHub 凭据'); process.exit(1); }
-  const token = cred.password;
-  console.log(`凭据: ${cred.username} / token 前缀 ${token.slice(0, 4)}…（不落盘）`);
-  console.log(`仓库: ${REPO}`);
-  console.log(`版本: ${VERSION}   tag: ${TAG}`);
-  console.log(`附件: ${path.basename(TGZ)}  ${kb} KB`);
-  console.log('');
+const cred = await gitCredential();
+if (!cred?.password) { console.error('拿不到 GitHub 凭据'); process.exit(1); }
+const token = cred.password;
+console.log(`凭据: ${cred.username} / token 前缀 ${token.slice(0, 4)}…（不落盘）`);
+console.log(`仓库: ${REPO}`);
+console.log(`版本: ${VERSION}   tag: ${TAG}`);
+console.log(`附件: ${path.basename(TGZ)}  ${kb} KB`);
+console.log('');
 
-  const repo = await api('GET', `/repos/${REPO}`, token);
-  if (repo.code !== 200) { console.error('读仓库失败 HTTP ' + repo.code); process.exit(1); }
-  const perms = JSON.parse(repo.body).permissions || {};
-  console.log('仓库权限: ' + JSON.stringify(perms));
-  if (!perms.push && !perms.admin) { console.error('token 无写权限'); process.exit(1); }
+const repo = await api('GET', `/repos/${REPO}`, token);
+if (repo.code !== 200) { console.error('读仓库失败 HTTP ' + repo.code); process.exit(1); }
+const perms = JSON.parse(repo.body).permissions || {};
+console.log('仓库权限: ' + JSON.stringify(perms));
+if (!perms.push && !perms.admin) { console.error('token 无写权限'); process.exit(1); }
 
-  const head = await api('GET', `/repos/${REPO}/commits/main`, token);
-  if (head.code === 200) console.log('main HEAD: ' + JSON.parse(head.body).sha.slice(0, 7));
+const head = await api('GET', `/repos/${REPO}/commits/main`, token);
+if (head.code === 200) console.log('main HEAD: ' + JSON.parse(head.body).sha.slice(0, 7));
 
-  const existing = await api('GET', `/repos/${REPO}/releases/tags/${TAG}`, token);
-  if (existing.code === 200) {
-    console.log(`\n⚠ 已存在 ${TAG} 的 Release：${JSON.parse(existing.body).html_url}`);
-    console.log('  不做任何修改。要重发请先在网页上删除它。');
-    process.exit(0);
-  }
-  console.log(`tag ${TAG} 暂无 Release（HTTP ${existing.code}），可以创建。`);
+const existing = await api('GET', `/repos/${REPO}/releases/tags/${TAG}`, token);
+if (existing.code === 200) {
+  console.log(`\n已存在 ${TAG} 的 Release：${JSON.parse(existing.body).html_url}`);
+  console.log('不做任何修改。要重发请先在网页上删除它。');
+  process.exit(0);
+}
+console.log(`tag ${TAG} 暂无 Release（HTTP ${existing.code}），可以创建。`);
 
-  if (DRY) { console.log('\n--dry-run：检查通过，未创建任何东西。'); return; }
-
+if (DRY) {
+  console.log('\n--dry-run：检查通过，未创建任何东西。');
+} else {
   console.log('\n创建 Release ...');
   const created = await api('POST', `/repos/${REPO}/releases`, token, {
     json: { tag_name: TAG, target_commitish: 'main', name: NAME, body: NOTES, draft: false, prerelease: false },
@@ -207,4 +210,4 @@ function api(method, url, token, { json, raw, contentType, timeout = 1800000 } =
   console.log(`✓ ${asset.name}  ${(asset.size / 1024).toFixed(1)} KB`);
   console.log(`  ${asset.browser_download_url}`);
   console.log(`\n完成 → ${rel.html_url}`);
-})();
+}
