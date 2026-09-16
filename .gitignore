@@ -14,3 +14,6 @@ node_modules/
 *.log
 Thumbs.db
 .DS_Store
+
+# 投稿脚本的临时请求体（脚本会自删，兜底忽略）
+tools/.submit-body.json
