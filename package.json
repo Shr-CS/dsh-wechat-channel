@@ -1,0 +1,51 @@
+{
+  "name": "dsh-wechat-channel",
+  "version": "0.1.0",
+  "description": "微信公众号通道插件：在微信里发指令操控 DeepSeek Harness，并把 DSH 的结果推回微信。零运行时依赖。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "cordis.patch.yml"
+  ],
+  "license": "MIT",
+  "author": "Shr.CS",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "wechat",
+    "weixin",
+    "公众号",
+    "机器人"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.2-rc.1"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shr-CS/dsh-wechat-channel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Shr-CS/dsh-wechat-channel/issues"
+  },
+  "homepage": "https://github.com/Shr-CS/dsh-wechat-channel#readme"
+}

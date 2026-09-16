@@ -1,0 +1,16 @@
+# 运行期产物与本地测试脚手架 —— 都不该进版本库
+.dsh-test/
+.tunnel/
+.backup-profile/
+
+# cloudflared 二进制（52MB，按需下载，绝不入库）
+bin/
+
+# npm 打包产物
+*.tgz
+
+# 依赖与系统文件
+node_modules/
+*.log
+Thumbs.db
+.DS_Store
