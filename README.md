@@ -107,7 +107,7 @@ DSH Desktop 的 pnpm runner 会自动把 `dsh-wechat-channel` 注册进 `dsh.pro
 bin/cloudflared.exe tunnel --url http://127.0.0.1:<dsh web 端口> --no-autoupdate --protocol http2
 ```
 
-拿到 `https://xxxx.trycloudflare.com` 后，公众号后台填 `https://xxxx.trycloudflare.com/wechat`。
+拿到 `https://xxxx.trycloudflare.com` 后，公众号后台填 `https://xxxx.trycloudflare.com/wechat-mp`。
 
 > ⚠️ `trycloudflare.com` 地址是**临时的**，重启就变。微信要求回调 URL 稳定，
 > 正式使用请用固定域名（`@linxin666/dsh-remote-web-ui` 自带的固定域名中继，或自有域名的命名隧道）。
@@ -127,7 +127,7 @@ bin/cloudflared.exe tunnel --url http://127.0.0.1:<dsh web 端口> --no-autoupda
 
 - `allowFrom` 白名单是**唯一**准入控制，请保持 `requireWhitelist: true`
 - 回调入口有签名校验（SHA1 + 定长比较），错误签名一律 403
-- 状态端点 `/wechat/status` 需要 `?key=<token>`，且**绝不回显 token**
+- 状态端点 `/wechat-mp/status` 需要 `?key=<token>`，且**绝不回显 token**
 - 只把你自己的 openid 加进白名单
 
 ## 七、分层结构
@@ -145,27 +145,28 @@ bin/cloudflared.exe tunnel --url http://127.0.0.1:<dsh web 端口> --no-autoupda
 ## 八、测试与工具
 
 ```bash
-node --test test/wechat.test.js test/integration.test.js test/wechat-api.test.js test/bridge.test.js
+npm test          # 82 项
 ```
 
-82 项测试，覆盖：签名排序、CDATA 注入、白名单、5 秒死线、token 缓存与并发去重、
-失效重试、长文分条、每用户串行、超时取消、会话淘汰，以及**完整的异步链路**
+覆盖：签名排序、CDATA 注入、白名单、5 秒死线、token 缓存与并发去重、失效重试、
+长文分条、每用户串行、超时取消、会话淘汰，以及**完整的异步链路**
 （微信消息 → 回执 → 后台跑 DSH → 客服消息推送）。
 
 排查工具：
 
 ```bash
-node tools/sign.js <token> /wechat ECHO      # 生成带正确签名的回调 URL
+node tools/sign.js <token> /wechat-mp ECHO   # 生成带正确签名的回调 URL
 node tools/mock-wechat-server.js             # 假微信服务端，接收并记录推送
 ```
 
 ## 九、状态端点
 
 ```
-GET /wechat/status?key=<token>
+GET <path>/status?key=<token>
 ```
 
-返回配置状态、白名单、会话数、模型路由，以及最近的会话事件时间线（由 `diagnostics` 控制）。
+默认即 `/wechat-mp/status`（`path` 跟配置走）。返回配置状态、白名单、会话数、模型路由，
+以及最近的会话事件时间线（由 `diagnostics` 控制）。
 排查「消息发出去了但没反应」时这个端点最有用。
 
 ## 十、踩过的坑（都已在代码里注释说明）
